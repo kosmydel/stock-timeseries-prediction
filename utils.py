@@ -55,7 +55,7 @@ class TimeseriesExperiment:
         self.trained_model = None
 
     def load_or_find_parameters(self):
-        model_name = f'{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.json'
+        model_name = f'{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.pkl'
         self.trained_model = load_model(model_name)
         if self.trained_model is None:
             self.find_parameters()
@@ -73,7 +73,7 @@ class TimeseriesExperiment:
     def run(self):
         self.load_or_find_parameters()
 
-        result = self.trained_model.historical_forecasts(self.dataset, forecast_horizon=self.forecast_horizon)
+        result = self.trained_model.historical_forecasts(self.dataset.series, forecast_horizon=self.forecast_horizon)
 
         metrics = calculate_metrics(self.dataset, result)
         metrics['model'] = self.model.__class__.__name__
