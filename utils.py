@@ -4,6 +4,7 @@ from tqdm.notebook import tqdm
 from typing import List
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts import TimeSeries
+import matplotlib.pyplot as plt
 
 RESULTS_PATH = 'results/'
 
@@ -21,6 +22,14 @@ def print_metrics(name, series, forecast):
     for m, v in metrics.items():
         print(f'{m}: {v:.2f}')
     print('')
+
+def plot_forecast(series, forecast, title):
+    plt.figure(figsize=(25,5))
+    series.plot(label="actual")
+    forecast.plot(label="forecast")
+    plt.title(title)
+    plt.legend()
+    plt.show()
 
 
 def run_experiment():
