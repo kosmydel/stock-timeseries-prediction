@@ -47,16 +47,18 @@ class Dataset:
 
 class TimeseriesExperiment:
     # TODO: Add metric support
-    def __init__(self, model: ForecastingModel, dataset: Dataset, parameters: dict, forecast_horizon: int = 3):
+    def __init__(self, model: ForecastingModel, dataset: Dataset, parameters: dict, forecast_horizon: int = 3, use_pretrained_model: bool = False):
         self.model = model
         self.dataset = dataset
         self.parameters = parameters
         self.forecast_horizon = forecast_horizon
         self.trained_model = None
+        self.use_pretrained_model = use_pretrained_model
 
     def load_or_find_parameters(self):
         model_name = f'{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.pkl'
-        self.trained_model = load_model(model_name)
+        if self.use_pretrained_model:
+            self.trained_model = load_model(model_name)
         if self.trained_model is None:
             self.find_parameters()
             save_model(model_name, self.model)
