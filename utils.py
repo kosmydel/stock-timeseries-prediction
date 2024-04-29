@@ -62,10 +62,13 @@ class TimeseriesExperiment:
             save_model(model_name, self.model)
 
     def find_parameters(self):
-        model, parameters, metric = self.model.gridsearch(self.parameters, self.dataset.series, verbose=True)
-
-        self.trained_model = model
-        print('Best parameters:', parameters, 'Metric:', metric)
+        if len(self.parameters) == 0:
+            self.trained_model = self.model.fit(self.dataset.series)
+            print('No parameters to search')
+        else:
+            model, parameters, metric = self.model.gridsearch(self.parameters, self.dataset.series, verbose=True)
+            self.trained_model = model
+            print('Best parameters:', parameters, 'Metric:', metric)
 
     def run(self):
         self.load_or_find_parameters()
