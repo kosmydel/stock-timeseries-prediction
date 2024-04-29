@@ -5,6 +5,7 @@ from typing import List
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts import TimeSeries
 import matplotlib.pyplot as plt
+import time
 
 RESULTS_PATH = 'results/'
 
@@ -36,7 +37,7 @@ def run_experiment():
     print('Running experiment')
 
 
-def backtest(models: List[ForecastingModel], series: TimeSeries, forecast_horizon: int = 3, dataset: str = 'electricity'):
+def backtest(models: List[ForecastingModel], series: TimeSeries, dataset: str, forecast_horizon: int = 3):
     """
     Run backtest for a list of models
     :param models: list of trained models
@@ -50,6 +51,7 @@ def backtest(models: List[ForecastingModel], series: TimeSeries, forecast_horizo
         metrics['model'] = model.__class__.__name__
         metrics['forecast_horizon'] = forecast_horizon
         metrics['dataset'] = dataset
+        metrics['experiment_time'] = time.time()
 
         file_name = f'{RESULTS_PATH}{dataset}_{model.__class__.__name__}_{forecast_horizon}.json'
 
