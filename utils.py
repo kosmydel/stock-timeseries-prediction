@@ -78,7 +78,7 @@ class TimeseriesExperiment:
         metrics = calculate_metrics(self.dataset.series, result)
         metrics['model'] = self.model.__class__.__name__
         metrics['forecast_horizon'] = self.forecast_horizon
-        metrics['dataset'] = self.dataset
+        metrics['dataset'] = self.dataset.name
         metrics['experiment_time'] = time.time()
 
         file_name = f'{RESULTS_PATH}{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.json'
