@@ -75,13 +75,13 @@ class TimeseriesExperiment:
 
         result = self.trained_model.historical_forecasts(self.dataset.series, forecast_horizon=self.forecast_horizon)
 
-        metrics = calculate_metrics(self.dataset, result)
+        metrics = calculate_metrics(self.dataset.series, result)
         metrics['model'] = self.model.__class__.__name__
         metrics['forecast_horizon'] = self.forecast_horizon
         metrics['dataset'] = self.dataset
         metrics['experiment_time'] = time.time()
 
-        file_name = f'{RESULTS_PATH}{self.dataset}_{model.__class__.__name__}_{self.forecast_horizon}.json'
+        file_name = f'{RESULTS_PATH}{self.dataset.name}_{model.__class__.__name__}_{self.forecast_horizon}.json'
 
         with open(file_name, 'w') as f:
             json.dump(metrics, f)
