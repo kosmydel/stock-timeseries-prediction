@@ -6,6 +6,7 @@ from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts import TimeSeries
 import matplotlib.pyplot as plt
 import time
+import pickle
 
 RESULTS_PATH = 'results/'
 
@@ -31,7 +32,6 @@ def plot_forecast(series, forecast, title):
     plt.title(title)
     plt.legend()
     plt.show()
-
 
 def run_experiment():
     print('Running experiment')
@@ -59,6 +59,17 @@ def backtest(models: List[ForecastingModel], series: TimeSeries, dataset: str, f
             json.dump(metrics, f)
 
 
+def save_model(file_name: str, model) -> None:
+    with open(file_name, 'wb') as f:
+        pickle.dump(model, f)
+
+
+def load_model(file_name) -> ForecastingModel | None:
+    try:
+        with open(file_name, 'rb') as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        return None
 
 if __name__ == '__main__':
-    print('This is the main program')
+    model = load_model('model.pkl')
