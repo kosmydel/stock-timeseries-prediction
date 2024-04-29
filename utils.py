@@ -66,7 +66,7 @@ class TimeseriesExperiment:
             self.trained_model = self.model.fit(self.dataset.series)
             print('No parameters to search')
         else:
-            model, parameters, metric = self.model.gridsearch(self.parameters, self.dataset.series, verbose=True)
+            model, parameters, metric = self.model.gridsearch(self.parameters, self.dataset.series, verbose=True, forecast_horizon=self.forecast_horizon)
             self.trained_model = model
             print('Best parameters:', parameters, 'Metric:', metric)
 
