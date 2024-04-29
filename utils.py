@@ -52,29 +52,28 @@ class TimeseriesExperiment:
         self.dataset = dataset
         self.parameters = parameters
         self.forecast_horizon = forecast_horizon
+        self.trained_model = None
 
     def load_or_find_parameters(self):
         model_name = f'{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.json'
-        model = load_model(model_name)
-        if model is None:
+        self.trained_model = load_model(model_name)
+        if self.trained_model is None:
             self.find_parameters()
             save_model(model_name, self.model)
-        else:
-            self.model = model
 
     def find_parameters(self):
         model, parameters, metric = self.model.gridsearch(self.parameters, self.dataset.series, verbose=True)
 
-        self.model = model
+        self.trained_model = model
         print('Best parameters:', parameters, 'Metric:', metric)
 
     def run(self):
         self.load_or_find_parameters()
 
-        result = self.model.historical_forecasts(self.dataset, forecast_horizon=self.forecast_horizon)
+        result = self.trained_model.historical_forecasts(self.dataset, forecast_horizon=self.forecast_horizon)
 
         metrics = calculate_metrics(self.dataset, result)
-        metrics['model'] = model.__class__.__name__
+        metrics['model'] = self.model.__class__.__name__
         metrics['forecast_horizon'] = self.forecast_horizon
         metrics['dataset'] = self.dataset
         metrics['experiment_time'] = time.time()
