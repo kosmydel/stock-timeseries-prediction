@@ -80,11 +80,14 @@ class TimeseriesExperiment:
         metrics['forecast_horizon'] = self.forecast_horizon
         metrics['dataset'] = self.dataset.name
         metrics['experiment_time'] = time.time()
+        metrics['parameters'] = self.trained_model._model_params
 
         file_name = f'{RESULTS_PATH}{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.json'
 
         with open(file_name, 'w') as f:
             json.dump(metrics, f)
+
+        return metrics
 
 
 
