@@ -7,6 +7,7 @@ from darts import TimeSeries
 import matplotlib.pyplot as plt
 import time
 import pickle
+import os
 
 RESULTS_PATH = 'results/'
 
@@ -35,8 +36,16 @@ def plot_forecast(series, forecast, title):
 
 
 class Dataset:
-    def __init__(self, series: TimeSeries, name: str):
+    def __init__(self, series: TimeSeries, name: str, train_days: int = 60):
+        # split series into train and test sets
         self.series = series
+        self.train, self.test = series.split_after(0.8)
+
+        # plot the train and test sets
+        series.plot(label='actual')
+        self.train.plot(label='train')
+        self.test.plot(label='test')
+
         self.name = name
 
         self.preprocess()
@@ -65,17 +74,18 @@ class TimeseriesExperiment:
 
     def find_parameters(self):
         if len(self.parameters) == 0:
-            self.trained_model = self.model.fit(self.dataset.series)
+            self.trained_model = self.model.fit(self.dataset.train)
             print('No parameters to search')
         else:
-            model, parameters, metric = self.model.gridsearch(self.parameters, self.dataset.series, verbose=True, forecast_horizon=self.forecast_horizon)
+            print('Searching for best parameters', self.parameters)
+            model, parameters, metric = self.model.gridsearch(self.parameters, self.dataset.train, verbose=True, forecast_horizon=self.forecast_horizon)
             self.trained_model = model
             print('Best parameters:', parameters, 'Metric:', metric)
 
     def run(self):
         self.load_or_find_parameters()
 
-        result = self.trained_model.historical_forecasts(self.dataset.series, forecast_horizon=self.forecast_horizon)
+        result = self.trained_model.historical_forecasts(self.dataset.series, forecast_horizon=self.forecast_horizon, retrain=False)
 
         metrics = calculate_metrics(self.dataset.series, result)
         metrics['model'] = self.model.__class__.__name__
@@ -85,6 +95,8 @@ class TimeseriesExperiment:
         metrics['parameters'] = self.trained_model._model_params
 
         file_name = f'{RESULTS_PATH}{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.json'
+
+        os.makedirs(RESULTS_PATH, exist_ok=True)
 
         with open(file_name, 'w') as f:
             json.dump(metrics, f)
