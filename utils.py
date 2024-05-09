@@ -59,6 +59,7 @@ class TimeseriesExperiment:
         parameters: dict = {},
         forecast_horizon: int = 3,
         use_pretrained_model: bool = False,
+        retrain: bool = False,
     ):
         self.model = model
         self.dataset = dataset
@@ -66,6 +67,7 @@ class TimeseriesExperiment:
         self.forecast_horizon = forecast_horizon
         self.trained_model = None
         self.use_pretrained_model = use_pretrained_model
+        self.retrain = retrain
 
     def find_parameters(self):
         if len(self.parameters) == 0:
@@ -96,7 +98,7 @@ class TimeseriesExperiment:
         self.load_or_train()
 
         result = self.trained_model.historical_forecasts(
-            self.dataset.series, forecast_horizon=self.forecast_horizon, retrain=False
+            self.dataset.series, forecast_horizon=self.forecast_horizon, retrain=self.retrain
         )
 
         metrics = calculate_metrics(self.dataset.series, result)
