@@ -82,6 +82,7 @@ class TimeseriesExperiment:
                 forecast_horizon=self.forecast_horizon,
             )
             self.trained_model = model
+            self.trained_model.fit(self.dataset.train)
             print("Best parameters:", parameters, "Metric:", metric)
 
     def load_or_train(self):
