@@ -1,0 +1,1 @@
+{"mape": 737.6608937158287, "mse": 2.0007609387042296, "rmse": 1.4144825692472247, "mae": 0.8765371194128259, "model": "NaiveSeasonal", "forecast_horizon": 3, "dataset": "walmart-sales", "experiment_time": 1715278069.307275, "parameters": {"K": 1}}
