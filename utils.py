@@ -83,7 +83,8 @@ class TimeseriesExperiment:
             print('Best parameters:', parameters, 'Metric:', metric)
 
     def run(self):
-        self.load_or_find_parameters()
+        # self.load_or_find_parameters() # turning off for now, we don't want to use gridsearch
+        self.trained_model = self.model.fit(self.dataset.train)
 
         result = self.trained_model.historical_forecasts(self.dataset.series, forecast_horizon=self.forecast_horizon, retrain=False)
 
