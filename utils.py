@@ -83,7 +83,7 @@ class TimeseriesExperiment:
             print("Best parameters:", parameters, "Metric:", metric)
 
     def load_or_train(self):
-        model_name = f"{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.pkl"
+        model_name = f"{self.dataset.name}_{self.model.__class__.__name__}.pkl"
         model_location = f"models/{model_name}"
 
         if os.path.exists(model_location):
