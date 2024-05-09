@@ -1,0 +1,1 @@
+{"mape": 14.951607014258004, "mse": 0.04694550113125099, "rmse": 0.21666910516095964, "mae": 0.16705059058333446, "model": "ARIMA", "forecast_horizon": 3, "dataset": "electricity", "experiment_time": 1715278541.303314, "parameters": {"p": 3, "d": 1, "q": 0, "seasonal_order": [0, 0, 0, 0], "trend": null, "random_state": null, "add_encoders": null}}
