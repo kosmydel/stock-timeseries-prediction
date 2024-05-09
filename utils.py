@@ -40,14 +40,7 @@ class Dataset:
         # split series into train and test sets
         self.series = series
         self.train, self.test = series.split_after(0.8)
-
-        # plot the train and test sets
-        series.plot(label='actual')
-        self.train.plot(label='train')
-        self.test.plot(label='test')
-
         self.name = name
-
         self.preprocess()
 
     def preprocess(self):
@@ -64,27 +57,36 @@ class TimeseriesExperiment:
         self.trained_model = None
         self.use_pretrained_model = use_pretrained_model
 
-    def load_or_find_parameters(self):
-        model_name = f'{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.pkl'
-        if self.use_pretrained_model:
-            self.trained_model = load_model(model_name)
-        if self.trained_model is None:
-            self.find_parameters()
-            save_model(model_name, self.model)
+    # def load_or_find_parameters(self):
+    #     model_name = f'{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.pkl'
+    #     if self.use_pretrained_model:
+    #         self.trained_model = load_model(model_name)
+    #     if self.trained_model is None:
+    #         self.find_parameters()
+    #         save_model(model_name, self.model)
 
-    def find_parameters(self):
-        if len(self.parameters) == 0:
-            self.trained_model = self.model.fit(self.dataset.train)
-            print('No parameters to search')
+    # def find_parameters(self):
+    #     if len(self.parameters) == 0:
+    #         self.trained_model = self.model.fit(self.dataset.train)
+    #         print('No parameters to search')
+    #     else:
+    #         print('Searching for best parameters', self.parameters)
+    #         model, parameters, metric = self.model.gridsearch(self.parameters, self.dataset.train, verbose=True, forecast_horizon=self.forecast_horizon)
+    #         self.trained_model = model
+    #         print('Best parameters:', parameters, 'Metric:', metric)
+
+    def load_or_train(self):
+        model_name = f'{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.pkl'
+        model_location = f'models/{model_name}'
+
+        if os.path.exists(model_location):
+            self.trained_model = load_model(model_location)
         else:
-            print('Searching for best parameters', self.parameters)
-            model, parameters, metric = self.model.gridsearch(self.parameters, self.dataset.train, verbose=True, forecast_horizon=self.forecast_horizon)
-            self.trained_model = model
-            print('Best parameters:', parameters, 'Metric:', metric)
+            self.trained_model = self.model.fit(self.dataset.train)
+            save_model(model_location, self.trained_model)
 
     def run(self):
-        # self.load_or_find_parameters() # turning off for now, we don't want to use gridsearch
-        self.trained_model = self.model.fit(self.dataset.train)
+        self.load_or_train()
 
         result = self.trained_model.historical_forecasts(self.dataset.series, forecast_horizon=self.forecast_horizon, retrain=False)
 
