@@ -11,6 +11,7 @@ import os
 
 RESULTS_PATH = "results/"
 
+HORIZONS = [1, 2, 3, 5, 10]
 
 def calculate_metrics(series, forecast):
     metrics = {}
@@ -101,6 +102,9 @@ class TimeseriesExperiment:
         result = self.trained_model.historical_forecasts(
             self.dataset.series, forecast_horizon=self.forecast_horizon, retrain=self.retrain
         )
+
+        # plot forecast
+        plot_forecast(self.dataset.series, result, f"{self.model.__class__.__name__}")
 
         metrics = calculate_metrics(self.dataset.series, result)
         metrics["model"] = self.model.__class__.__name__
