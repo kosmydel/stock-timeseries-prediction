@@ -1,0 +1,1 @@
+{"mape": 4.442363890748693, "mse": 4723665.139289243, "rmse": 2173.3994431050273, "mae": 1426.7980625649238, "model": "XGBModel", "forecast_horizon": 3, "dataset": "bitcoin", "experiment_time": 1715455284.917404}
