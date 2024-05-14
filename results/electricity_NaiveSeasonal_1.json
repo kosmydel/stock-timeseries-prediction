@@ -1,1 +1,1 @@
-{"mape": 6.764675288536039, "mse": 0.010775817863773319, "rmse": 0.1038066368965555, "mae": 0.07521279131132624, "model": "NaiveSeasonal", "forecast_horizon": 1, "dataset": "electricity", "experiment_time": 1715278115.8816068, "parameters": {"K": 1}}
+{"mape": 5.771838301445469, "mse": 0.007526981244530573, "rmse": 0.0867581768165432, "mae": 0.06428243474574748, "model": "NaiveSeasonal", "forecast_horizon": 1, "dataset": "electricity", "experiment_time": 1715710719.531552, "parameters": {"K": 1}}

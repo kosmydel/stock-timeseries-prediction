@@ -11,7 +11,7 @@ import os
 
 RESULTS_PATH = "results/"
 
-HORIZONS = [1, 2, 3, 5, 10]
+HORIZONS = [1, 2, 3, 5, 7, 9, 10]
 
 def calculate_metrics(series, forecast):
     metrics = {}
@@ -41,9 +41,15 @@ def plot_forecast(series, forecast, title):
 
 class Dataset:
     def __init__(self, series: TimeSeries, name: str, train_days: int = 60):
-        # split series into train and test sets
         self.series = series
-        self.train, self.test = series.split_after(0.8)
+
+        # split series into train and test sets
+        # this is necessaru, because split_after(0.8) removes the last point of the training set
+        diff =  series[-1].time_index[0] - series[0].time_index[0]
+        interval_0_8 = diff * 0.8
+        split_point = series[0].time_index[0] + interval_0_8
+        self.train, self.test = series.split_after(split_point)
+
         self.name = name
         self.preprocess()
 
@@ -61,6 +67,7 @@ class TimeseriesExperiment:
         forecast_horizon: int = 3,
         use_pretrained_model: bool = False,
         retrain: bool = False,
+        n_last_series_from_train_in_test: int = 0,
     ):
         self.model = model
         self.dataset = dataset
@@ -69,6 +76,7 @@ class TimeseriesExperiment:
         self.trained_model = None
         self.use_pretrained_model = use_pretrained_model
         self.retrain = retrain
+        self.n_last_series_from_train_in_test = n_last_series_from_train_in_test
 
     def find_parameters(self):
         if len(self.parameters) == 0:
@@ -99,12 +107,17 @@ class TimeseriesExperiment:
     def run(self):
         self.load_or_train()
 
+        test_set = self.dataset.test
+        if self.n_last_series_from_train_in_test > 0:
+            # push last n series from train to test
+            test_set = self.dataset.train[-self.n_last_series_from_train_in_test:].append(self.dataset.test)
+        
         result = self.trained_model.historical_forecasts(
-            self.dataset.series, forecast_horizon=self.forecast_horizon, retrain=self.retrain
+            test_set, forecast_horizon=self.forecast_horizon, retrain=self.retrain
         )
 
         # plot forecast
-        plot_forecast(self.dataset.series, result, f"{self.model.__class__.__name__}")
+        plot_forecast(self.dataset.test, result, f"{self.model.__class__.__name__}")
 
         metrics = calculate_metrics(self.dataset.series, result)
         metrics["model"] = self.model.__class__.__name__
