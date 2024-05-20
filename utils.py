@@ -7,6 +7,8 @@ from darts import TimeSeries
 import matplotlib.pyplot as plt
 import time
 import pickle
+from sklearn.preprocessing import StandardScaler
+from darts.dataprocessing.transformers.scaler import Scaler
 import os
 
 RESULTS_PATH = "results/"
@@ -40,7 +42,7 @@ def plot_forecast(series, forecast, title):
 
 
 class Dataset:
-    def __init__(self, series: TimeSeries, name: str, train_days: int = 60):
+    def __init__(self, series: TimeSeries, name: str, preprocess=True):
         self.series = series
 
         # split series into train and test sets
@@ -51,10 +53,27 @@ class Dataset:
         self.train, self.test = series.split_after(split_point)
 
         self.name = name
-        self.preprocess()
+
+        if preprocess:
+            self.preprocess()
 
     def preprocess(self):
-        pass
+        self.scaler = StandardScaler()
+        self.transformer = Scaler(self.scaler)
+
+        self.train = self.transformer.fit_transform(self.train)
+        self.test = self.transformer.transform(self.test)
+
+    def postprocess(self, series):
+        return self.transformer.inverse_transform(series)
+
+    def plot_train_test(self):
+        plt.figure(figsize=(25, 5))
+        self.train.plot(label="train")
+        self.test.plot(label="test")
+        plt.title(self.name)
+        plt.legend()
+        plt.show()
 
 
 class TimeseriesExperiment:
@@ -141,6 +160,7 @@ def backtest(
     series: TimeSeries,
     dataset: str,
     forecast_horizon: int = 3,
+    verbose=True,
 ):
     """
     Run backtest for a list of models
@@ -152,6 +172,8 @@ def backtest(
         result = model.historical_forecasts(series, forecast_horizon=forecast_horizon)
 
         metrics = calculate_metrics(series, result)
+        if verbose:
+            print(f'Model: {model.__class__.__name__} Metrics: {metrics}')
         metrics["model"] = model.__class__.__name__
         metrics["forecast_horizon"] = forecast_horizon
         metrics["dataset"] = dataset
