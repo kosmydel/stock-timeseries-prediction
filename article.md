@@ -6,6 +6,8 @@ Navigating the world of TimeSeries prediction models can be a maze. With numerou
 
 ## Datasets
 
+### Walmart Sales Forecasting
+
 // TODO: List the datasets, explain why each dataset is different
 
 ## Models

@@ -42,8 +42,10 @@ def plot_forecast(series, forecast, title):
 
 
 class Dataset:
-    def __init__(self, series: TimeSeries, name: str, preprocess=True):
+    def __init__(self, series: TimeSeries, name: str, past_covariates: TimeSeries | None = None, preprocess=True):
         self.series = series
+        self.name = name
+        self.past_covariates = past_covariates
 
         # split series into train and test sets
         # this is necessaru, because split_after(0.8) removes the last point of the training set
@@ -52,7 +54,8 @@ class Dataset:
         split_point = series[0].time_index[0] + interval_0_8
         self.train, self.test = series.split_after(split_point)
 
-        self.name = name
+        if past_covariates is not None:
+            self.past_covariates_train, self.past_covariates_test = past_covariates.split_after(split_point)
 
         if preprocess:
             self.preprocess()
@@ -63,6 +66,13 @@ class Dataset:
 
         self.train = self.transformer.fit_transform(self.train)
         self.test = self.transformer.transform(self.test)
+
+        self.scaler_covariates = StandardScaler()
+        self.transformer_covariates = Scaler(self.scaler_covariates)
+
+        if self.past_covariates is not None:
+            self.past_covariates_train = self.transformer_covariates.fit_transform(self.past_covariates_train)
+            self.past_covariates_test = self.transformer_covariates.transform(self.past_covariates_test)
 
     def postprocess(self, series):
         return self.transformer.inverse_transform(series)
@@ -99,8 +109,9 @@ class TimeseriesExperiment:
 
     def find_parameters(self):
         if len(self.parameters) == 0:
-            self.trained_model = self.model.fit(self.dataset.train)
+            self.trained_model = self.model.fit(self.dataset.train, past_covariates=self.dataset.past_covariates_train)
             print("No parameters to search")
+            return None
         else:
             print("Searching for best parameters", self.parameters)
             model, parameters, metric = self.model.gridsearch(
@@ -108,20 +119,22 @@ class TimeseriesExperiment:
                 self.dataset.train,
                 verbose=True,
                 forecast_horizon=self.forecast_horizon,
+                past_covariates=self.dataset.past_covariates_train,
             )
             self.trained_model = model
-            self.trained_model.fit(self.dataset.train)
+            self.trained_model.fit(self.dataset.train, past_covariates=self.dataset.past_covariates_train)
             print("Best parameters:", parameters, "Metric:", metric)
+            return parameters
 
     def load_or_train(self):
         model_name = f"{self.dataset.name}_{self.model.__class__.__name__}.pkl"
         model_location = f"models/{model_name}"
 
-        if os.path.exists(model_location):
+        if os.path.exists(model_location) and self.use_pretrained_model:
             self.trained_model = load_model(model_location)
         else:
-            self.find_parameters()
-            save_model(model_location, self.trained_model)
+            parameters = self.find_parameters()
+            save_model(model_location, self.trained_model, parameters=parameters)
 
     def run(self):
         self.load_or_train()
@@ -130,9 +143,15 @@ class TimeseriesExperiment:
         if self.n_last_series_from_train_in_test > 0:
             # push last n series from train to test
             test_set = self.dataset.train[-self.n_last_series_from_train_in_test:].append(self.dataset.test)
-        
+
+        test_covariate = self.dataset.past_covariates_test
+        if self.n_last_series_from_train_in_test > 0:
+            test_covariate = self.dataset.past_covariates_train[-self.n_last_series_from_train_in_test:].append(
+                self.dataset.past_covariates_test
+            )
         result = self.trained_model.historical_forecasts(
-            test_set, forecast_horizon=self.forecast_horizon, retrain=self.retrain
+            test_set, forecast_horizon=self.forecast_horizon, retrain=self.retrain,
+            past_covariates=test_covariate
         )
 
         # plot forecast
@@ -185,9 +204,11 @@ def backtest(
             json.dump(metrics, f)
 
 
-def save_model(file_name: str, model) -> None:
+def save_model(file_name: str, model, parameters) -> None:
     with open(file_name, "wb") as f:
         pickle.dump(model, f)
+    with open(file_name + ".params", "w") as f:
+        json.dump(parameters, f)
 
 
 def load_model(file_name) -> ForecastingModel | None:
