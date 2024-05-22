@@ -17,6 +17,7 @@ RESULTS_PATH = "results/"
 
 HORIZONS = [1, 2, 3, 5, 7, 9, 10]
 
+
 def calculate_metrics(series, forecast):
     metrics = {}
     metrics["mape"] = mape(series, forecast)
@@ -44,20 +45,28 @@ def plot_forecast(series, forecast, title):
 
 
 class Dataset:
-    def __init__(self, series: TimeSeries, name: str, past_covariates: TimeSeries | None = None, preprocess=True):
+    def __init__(
+        self,
+        series: TimeSeries,
+        name: str,
+        past_covariates: TimeSeries | None = None,
+        preprocess=True,
+    ):
         self.series = series
         self.name = name
         self.past_covariates = past_covariates
 
         # split series into train and test sets
         # this is necessaru, because split_after(0.8) removes the last point of the training set
-        diff =  series[-1].time_index[0] - series[0].time_index[0]
+        diff = series[-1].time_index[0] - series[0].time_index[0]
         interval_0_8 = diff * 0.8
         split_point = series[0].time_index[0] + interval_0_8
         self.train, self.test = series.split_after(split_point)
 
         if past_covariates is not None:
-            self.past_covariates_train, self.past_covariates_test = past_covariates.split_after(split_point)
+            self.past_covariates_train, self.past_covariates_test = (
+                past_covariates.split_after(split_point)
+            )
 
         if preprocess:
             self.preprocess()
@@ -73,8 +82,12 @@ class Dataset:
         self.transformer_covariates = Scaler(self.scaler_covariates)
 
         if self.past_covariates is not None:
-            self.past_covariates_train = self.transformer_covariates.fit_transform(self.past_covariates_train)
-            self.past_covariates_test = self.transformer_covariates.transform(self.past_covariates_test)
+            self.past_covariates_train = self.transformer_covariates.fit_transform(
+                self.past_covariates_train
+            )
+            self.past_covariates_test = self.transformer_covariates.transform(
+                self.past_covariates_test
+            )
 
     def postprocess(self, series):
         return self.transformer.inverse_transform(series)
@@ -111,7 +124,9 @@ class TimeseriesExperiment:
 
     def find_parameters(self):
         if len(self.parameters) == 0:
-            self.trained_model = self.model.fit(self.dataset.train, past_covariates=self.dataset.past_covariates_train)
+            self.trained_model = self.model.fit(
+                self.dataset.train, past_covariates=self.dataset.past_covariates_train
+            )
             print("No parameters to search")
             return None
         else:
@@ -124,7 +139,9 @@ class TimeseriesExperiment:
                 past_covariates=self.dataset.past_covariates_train,
             )
             self.trained_model = model
-            self.trained_model.fit(self.dataset.train, past_covariates=self.dataset.past_covariates_train)
+            self.trained_model.fit(
+                self.dataset.train, past_covariates=self.dataset.past_covariates_train
+            )
             print("Best parameters:", parameters, "Metric:", metric)
             return parameters
 
@@ -144,25 +161,33 @@ class TimeseriesExperiment:
         test_set = self.dataset.test
         if self.n_last_series_from_train_in_test > 0:
             # push last n series from train to test
-            test_set = self.dataset.train[-self.n_last_series_from_train_in_test:].append(self.dataset.test)
+            test_set = self.dataset.train[
+                -self.n_last_series_from_train_in_test :
+            ].append(self.dataset.test)
 
         test_covariate = self.dataset.past_covariates_test
         if self.n_last_series_from_train_in_test > 0:
-            test_covariate = self.dataset.past_covariates_train[-self.n_last_series_from_train_in_test:].append(
-                self.dataset.past_covariates_test
-            )
+            test_covariate = self.dataset.past_covariates_train[
+                -self.n_last_series_from_train_in_test :
+            ].append(self.dataset.past_covariates_test)
         result = self.trained_model.historical_forecasts(
-            test_set, forecast_horizon=self.forecast_horizon, retrain=self.retrain,
-            past_covariates=test_covariate
+            test_set,
+            forecast_horizon=self.forecast_horizon,
+            retrain=self.retrain,
+            past_covariates=test_covariate,
         )
 
         test_unscaled = self.dataset.postprocess(test_set)
         result_unscaled = self.dataset.postprocess(result)
 
         # plot forecast
-        plot_forecast(test_unscaled, result_unscaled, f"{self.model.__class__.__name__}")
+        plot_forecast(
+            test_unscaled, result_unscaled, f"{self.model.__class__.__name__}"
+        )
 
-        metrics = calculate_metrics(test_unscaled, self.dataset.postprocess(result_unscaled))
+        metrics = calculate_metrics(
+            test_unscaled, self.dataset.postprocess(result_unscaled)
+        )
         metrics["model"] = self.model.__class__.__name__
         metrics["forecast_horizon"] = self.forecast_horizon
         metrics["dataset"] = self.dataset.name
@@ -197,7 +222,7 @@ def backtest(
 
         metrics = calculate_metrics(series, result)
         if verbose:
-            print(f'Model: {model.__class__.__name__} Metrics: {metrics}')
+            print(f"Model: {model.__class__.__name__} Metrics: {metrics}")
         metrics["model"] = model.__class__.__name__
         metrics["forecast_horizon"] = forecast_horizon
         metrics["dataset"] = dataset
@@ -223,14 +248,16 @@ def load_model(file_name) -> ForecastingModel | None:
     except FileNotFoundError:
         return None
 
-def read_results(directory='results') -> pd.DataFrame:
+
+def read_results(directory="results") -> pd.DataFrame:
     frames = []
     for file in glob.glob(f"{directory}/*.json"):
         with open(file) as f:
-            data = pd.read_json(f, typ='series', orient='index')
+            data = pd.read_json(f, typ="series", orient="index")
             frames.append(data)
     res = pd.concat(frames, axis=1).T
     return res
+
 
 if __name__ == "__main__":
     model = load_model("model.pkl")
