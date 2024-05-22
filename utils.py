@@ -10,6 +10,8 @@ import pickle
 from sklearn.preprocessing import StandardScaler
 from darts.dataprocessing.transformers.scaler import Scaler
 import os
+import glob
+import pandas as pd
 
 RESULTS_PATH = "results/"
 
@@ -154,10 +156,13 @@ class TimeseriesExperiment:
             past_covariates=test_covariate
         )
 
-        # plot forecast
-        plot_forecast(self.dataset.test, result, f"{self.model.__class__.__name__}")
+        test_unscaled = self.dataset.postprocess(test_set)
+        result_unscaled = self.dataset.postprocess(result)
 
-        metrics = calculate_metrics(self.dataset.series, result)
+        # plot forecast
+        plot_forecast(test_unscaled, result_unscaled, f"{self.model.__class__.__name__}")
+
+        metrics = calculate_metrics(test_unscaled, self.dataset.postprocess(result_unscaled))
         metrics["model"] = self.model.__class__.__name__
         metrics["forecast_horizon"] = self.forecast_horizon
         metrics["dataset"] = self.dataset.name
@@ -218,6 +223,14 @@ def load_model(file_name) -> ForecastingModel | None:
     except FileNotFoundError:
         return None
 
+def read_results(directory='results') -> pd.DataFrame:
+    frames = []
+    for file in glob.glob(f"{directory}/*.json"):
+        with open(file) as f:
+            data = pd.read_json(f, typ='series', orient='index')
+            frames.append(data)
+    res = pd.concat(frames, axis=1).T
+    return res
 
 if __name__ == "__main__":
     model = load_model("model.pkl")
