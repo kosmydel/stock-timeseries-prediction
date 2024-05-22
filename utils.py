@@ -50,11 +50,13 @@ class Dataset:
         series: TimeSeries,
         name: str,
         past_covariates: TimeSeries | None = None,
+        future_covariates: TimeSeries | None = None,
         preprocess=True,
     ):
         self.series = series
         self.name = name
         self.past_covariates = past_covariates
+        self.future_covariates = future_covariates
 
         # split series into train and test sets
         # this is necessaru, because split_after(0.8) removes the last point of the training set
@@ -75,6 +77,7 @@ class Dataset:
         self.scaler = StandardScaler()
         self.transformer = Scaler(self.scaler)
 
+        self.series = self.transformer.fit_transform(self.series)
         self.train = self.transformer.fit_transform(self.train)
         self.test = self.transformer.transform(self.test)
 
@@ -87,6 +90,14 @@ class Dataset:
             )
             self.past_covariates_test = self.transformer_covariates.transform(
                 self.past_covariates_test
+            )
+
+        self.scaler_future_covariates = StandardScaler()
+        self.transformer_future_covariates = Scaler(self.scaler_future_covariates)
+
+        if self.future_covariates is not None:
+            self.future_covariates = self.transformer_future_covariates.fit_transform(
+                self.future_covariates
             )
 
     def postprocess(self, series):
@@ -102,13 +113,12 @@ class Dataset:
 
 
 class TimeseriesExperiment:
-    # TODO: Add metric support
     def __init__(
         self,
         model: ForecastingModel,
         dataset: Dataset,
         parameters: dict = {},
-        forecast_horizon: int = 3,
+        forecast_horizon: int = 1,
         use_pretrained_model: bool = False,
         retrain: bool = False,
         n_last_series_from_train_in_test: int = 0,
@@ -123,10 +133,14 @@ class TimeseriesExperiment:
         self.n_last_series_from_train_in_test = n_last_series_from_train_in_test
 
     def find_parameters(self):
+        params = {}
+        if self.model.supports_past_covariates:
+            params["past_covariates"] = self.dataset.past_covariates_train
+        if self.model.supports_future_covariates:
+            params["future_covariates"] = self.dataset.future_covariates
+
         if len(self.parameters) == 0:
-            self.trained_model = self.model.fit(
-                self.dataset.train, past_covariates=self.dataset.past_covariates_train
-            )
+            self.trained_model = self.model.fit(self.dataset.train, **params)
             print("No parameters to search")
             return None
         else:
@@ -136,12 +150,10 @@ class TimeseriesExperiment:
                 self.dataset.train,
                 verbose=True,
                 forecast_horizon=self.forecast_horizon,
-                past_covariates=self.dataset.past_covariates_train,
+                **params,
             )
             self.trained_model = model
-            self.trained_model.fit(
-                self.dataset.train, past_covariates=self.dataset.past_covariates_train
-            )
+            self.trained_model.fit(self.dataset.train, **params)
             print("Best parameters:", parameters, "Metric:", metric)
             return parameters
 
@@ -156,35 +168,34 @@ class TimeseriesExperiment:
             save_model(model_location, self.trained_model, parameters=parameters)
 
     def run(self):
+        # Load or train model
         self.load_or_train()
 
-        test_set = self.dataset.test
-        if self.n_last_series_from_train_in_test > 0:
-            # push last n series from train to test
-            test_set = self.dataset.train[
-                -self.n_last_series_from_train_in_test :
-            ].append(self.dataset.test)
+        params = {}
+        if self.trained_model.supports_past_covariates:
+            params["past_covariates"] = self.dataset.past_covariates
+        if self.trained_model.supports_future_covariates:
+            params["future_covariates"] = self.dataset.future_covariates
 
-        test_covariate = self.dataset.past_covariates_test
-        if self.n_last_series_from_train_in_test > 0:
-            test_covariate = self.dataset.past_covariates_train[
-                -self.n_last_series_from_train_in_test :
-            ].append(self.dataset.past_covariates_test)
+        # Measure model performance using historical forecasts
         result = self.trained_model.historical_forecasts(
-            test_set,
+            self.dataset.series,
+            start=self.dataset.test.start_time(),
             forecast_horizon=self.forecast_horizon,
             retrain=self.retrain,
-            past_covariates=test_covariate,
+            **params,
         )
 
-        test_unscaled = self.dataset.postprocess(test_set)
+        # Postprocess results
+        test_unscaled = self.dataset.postprocess(self.dataset.test)
         result_unscaled = self.dataset.postprocess(result)
 
-        # plot forecast
+        # Plot forecast
         plot_forecast(
             test_unscaled, result_unscaled, f"{self.model.__class__.__name__}"
         )
 
+        # Calculate metrics
         metrics = calculate_metrics(
             test_unscaled, self.dataset.postprocess(result_unscaled)
         )
@@ -194,6 +205,7 @@ class TimeseriesExperiment:
         metrics["experiment_time"] = time.time()
         metrics["parameters"] = self.trained_model._model_params
 
+        # Save results
         file_name = f"{RESULTS_PATH}{self.dataset.name}_{self.model.__class__.__name__}_{self.forecast_horizon}.json"
 
         os.makedirs(RESULTS_PATH, exist_ok=True)
