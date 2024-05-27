@@ -43,15 +43,15 @@ However, the outcome was less than impressive. Not only did the performance fail
 
 We have presented a table below that encapsulates the outcomes of our data analysis. This presentation aims to offer a lucid depiction of each model's performance when applied to three diverse datasets.
 
-### Mean Squared Error (MSE) Scores
+### Mean Squared Error (MSE) Scores of one step ahead predictions
 
 |          | Electricity | Walmart Sales | Bitcoin |
 | -------- | ----------- | ------------- | ------- |
-| Baseline |             |               |         |
-| XGBoost  |             |               |         |
+| Baseline | 0.0075      |               |         |
+| XGBoost  | 0.0086      |               |         |
 | LightGBM |             |               |         |
-| Prophet  |             |               |         |
-| Arima    |             |               |         |
+| Prophet  | 0.0800      |               |         |
+| Arima    | 0.0067      |               |         |
 | TFT      |             |               |         |
 
 ## Conclusion

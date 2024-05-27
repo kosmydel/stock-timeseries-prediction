@@ -94,6 +94,10 @@ class Dataset:
             self.past_covariates_test = self.transformer_covariates.transform(
                 self.past_covariates_test_unscaled
             )
+        else:
+            self.past_covariates = None
+            self.past_covariates_train = None
+            self.past_covariates_test = None
 
         self.scaler_future_covariates = StandardScaler()
         self.transformer_future_covariates = Scaler(self.scaler_future_covariates)
@@ -102,6 +106,8 @@ class Dataset:
             self.future_covariates = self.transformer_future_covariates.fit_transform(
                 self.future_covariates_unscaled
             )
+        else:
+            self.future_covariates = None
 
     def postprocess(self, series):
         return self.transformer.inverse_transform(series)

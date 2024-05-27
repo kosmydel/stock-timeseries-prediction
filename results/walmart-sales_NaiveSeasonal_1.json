@@ -1,1 +1,1 @@
-{"mape": 1146331.9272255711, "mse": 5.590030263104471e+16, "rmse": 236432448.34633997, "mae": 217847003.0366966, "model": "NaiveSeasonal", "forecast_horizon": 1, "dataset": "walmart-sales", "experiment_time": 1716399152.406511, "parameters": {"K": 1}}
+{"mape": 11.206881718246747, "mse": 30503061.348224156, "rmse": 5522.957663084532, "mae": 2403.6300000000006, "model": "NaiveSeasonal", "forecast_horizon": 1, "dataset": "walmart-sales", "experiment_time": 1716813342.299781, "parameters": {"K": 1}}

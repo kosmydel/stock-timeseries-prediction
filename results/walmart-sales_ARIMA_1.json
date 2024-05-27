@@ -1,0 +1,1 @@
+{"mape": 1160136.6571315804, "mse": 5.461514750515534e+16, "rmse": 233698839.33206716, "mae": 219086508.94540504, "model": "ARIMA", "forecast_horizon": 1, "dataset": "walmart-sales", "experiment_time": 1716809942.075388, "parameters": {"p": 5, "d": 1, "q": 0, "seasonal_order": [0, 0, 0, 0], "trend": null, "random_state": null, "add_encoders": null}}
