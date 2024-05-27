@@ -41,7 +41,7 @@ Attribute Information:
 - **sub_metering_2**: Energy sub-metering No. 2 (in watt-hours of active energy), representing the laundry room, which includes a washing machine, a tumble dryer, a refrigerator, and lighting.
 - **sub_metering_3**: Energy sub-metering No. 3 (in watt-hours of active energy), associated with an electric water heater and an air conditioner.
 
-The dataset was split into training and test sets. The data didn't need to be normalized, as the values were already in the same range. 
+The dataset was split into training and test sets. The data didn't need to be normalized, as the values were already in the same range.
 The dataset was big - so big actually that training the models took a considerable amount of time.
 The data was resampled to hourly data to reduce the size of the dataset.
 
@@ -71,16 +71,20 @@ We have presented a table below that encapsulates the outcomes of our data analy
 
 |          | Electricity | Walmart Sales | Bitcoin |
 | -------- | ----------- | ------------- | ------- |
-| Baseline | 0.0075      |               |         |
-| XGBoost  | 0.0086      |               |         |
-| LightGBM |             |               |         |
+| Baseline | 0.0075      | 30.5M         |         |
+| XGBoost  | 0.0086      | **5.82M**     |         |
+| LightGBM |             | 11.89M        |         |
 | Prophet  | 0.0800      |               |         |
-| Arima    | 0.0067      |               |         |
-| TFT      |             |               |         |
+| Arima    | 0.0067      | 35.58M        |         |
+| TFT      |             | 26.97         |         |
 
+#### Electricity:
 
-#### Electricity: 
 ![electricity](image.png)
+
+#### Walmart Sales Forecasting
+
+![walmart](results/walmart-sales/mse.png)
 
 ## Conclusion
 
