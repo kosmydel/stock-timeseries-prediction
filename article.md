@@ -25,6 +25,26 @@ We subsequently partitioned this dataset, creating distinct training and test se
 
 ### Eletricity Consumption Forecasting
 
+The Electricity Consumption Forecasting dataset was sourced from the [Kaggle](https://www.kaggle.com/datasets/uciml/electric-power-consumption-data-set). This dataset contains 2075259 measurements gathered between December 2006 and November 2010 (47 months).
+
+The dataset contains some missing values in the measurements, accounting for nearly 1.25% of the rows. Despite these missing values, all calendar timestamps are present in the dataset. - We've decided to interpolate the missing values to maintain the integrity of the dataset.
+
+Attribute Information:
+
+- **date**: Date in the format `dd/mm/yyyy`.
+- **time**: Time in the format `hh:mm:ss`.
+- **global_active_power**: Household global minute-averaged active power (in kilowatts).
+- **global_reactive_power**: Household global minute-averaged reactive power (in kilowatts).
+- **voltage**: Minute-averaged voltage (in volts).
+- **global_intensity**: Household global minute-averaged current intensity (in amperes).
+- **sub_metering_1**: Energy sub-metering No. 1 (in watt-hours of active energy), corresponding to the kitchen, which primarily houses a dishwasher, an oven, and a microwave (note: hot plates are gas-powered).
+- **sub_metering_2**: Energy sub-metering No. 2 (in watt-hours of active energy), representing the laundry room, which includes a washing machine, a tumble dryer, a refrigerator, and lighting.
+- **sub_metering_3**: Energy sub-metering No. 3 (in watt-hours of active energy), associated with an electric water heater and an air conditioner.
+
+The dataset was split into training and test sets. The data didn't need to be normalized, as the values were already in the same range. 
+The dataset was big - so big actually that training the models took a considerable amount of time.
+The data was resampled to hourly data to reduce the size of the dataset.
+
 ### Bitcoin Price Forecasting
 
 // TODO: List the datasets, explain why each dataset is different
@@ -57,6 +77,10 @@ We have presented a table below that encapsulates the outcomes of our data analy
 | Prophet  | 0.0800      |               |         |
 | Arima    | 0.0067      |               |         |
 | TFT      |             |               |         |
+
+
+#### Electricity: 
+![electricity](image.png)
 
 ## Conclusion
 
