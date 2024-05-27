@@ -6,7 +6,7 @@ from darts import TimeSeries
 import matplotlib.pyplot as plt
 import time
 import pickle
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 from darts.dataprocessing.transformers.scaler import Scaler
 import os
 import glob
@@ -17,7 +17,7 @@ RESULTS_PATH = "results/"
 HORIZONS = [1, 2, 3, 5, 7, 9, 10]
 
 
-def calculate_metrics(series, forecast):
+def calculate_metrics(series: TimeSeries, forecast: TimeSeries):
     metrics = {}
     metrics["mape"] = mape(series, forecast)
     metrics["mse"] = mse(series, forecast)
@@ -73,14 +73,14 @@ class Dataset:
             self.preprocess()
 
     def preprocess(self):
-        self.scaler = MinMaxScaler()
+        self.scaler = StandardScaler()
         self.transformer = Scaler(self.scaler)
 
         self.series = self.transformer.fit_transform(self.series_unscaled)
         self.train = self.transformer.transform(self.train_unscaled)
         self.test = self.transformer.transform(self.test_unscaled)
 
-        self.scaler_covariates = MinMaxScaler()
+        self.scaler_covariates = StandardScaler()
         self.transformer_covariates = Scaler(self.scaler_covariates)
 
         if self.past_covariates_unscaled is not None:
@@ -95,7 +95,7 @@ class Dataset:
                 self.past_covariates_test_unscaled
             )
 
-        self.scaler_future_covariates = MinMaxScaler()
+        self.scaler_future_covariates = StandardScaler()
         self.transformer_future_covariates = Scaler(self.scaler_future_covariates)
 
         if self.future_covariates_unscaled is not None:
