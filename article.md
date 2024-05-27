@@ -41,6 +41,19 @@ However, the outcome was less than impressive. Not only did the performance fail
 
 ## Comparison
 
+We have presented a table below that encapsulates the outcomes of our data analysis. This presentation aims to offer a lucid depiction of each model's performance when applied to three diverse datasets.
+
+### Mean Squared Error (MSE) Scores
+
+|          | Electricity | Walmart Sales | Bitcoin |
+| -------- | ----------- | ------------- | ------- |
+| Baseline |             |               |         |
+| XGBoost  |             |               |         |
+| LightGBM |             |               |         |
+| Prophet  |             |               |         |
+| Arima    |             |               |         |
+| TFT      |             |               |         |
+
 ## Conclusion
 
 // TODO: Summarize the results, provide recommendations
