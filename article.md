@@ -33,6 +33,10 @@ We subsequently partitioned this dataset, creating distinct training and test se
 
 // TODO: List models, table the results
 
+### Baseline - Naive Seasonal Model
+
+For our baseline model, we have chosen to utilize the [NaiveSeasonal model](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal). This model always predicts the value from $K$ time steps ago. We set $K=1$, so in this case, the model predicts the last value of the training set.
+
 ### TimeGPT
 
 We decided to put the cutting-edge TimeGPT model to the test. A transformer-based model tailored for TimeSeries forecasting, TimeGPT is a variant of the widely appreciated GPT model, known for its efficacy in the Natural Language Processing (NLP) domain. We ran a series of tests using the Electricity Consumption Forecasting dataset as our playground.
