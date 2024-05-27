@@ -33,6 +33,14 @@ We subsequently partitioned this dataset, creating distinct training and test se
 
 // TODO: List models, table the results
 
+### TimeGPT
+
+We decided to put the cutting-edge TimeGPT model to the test. A transformer-based model tailored for TimeSeries forecasting, TimeGPT is a variant of the widely appreciated GPT model, known for its efficacy in the Natural Language Processing (NLP) domain. We ran a series of tests using the Electricity Consumption Forecasting dataset as our playground.
+
+However, the outcome was less than impressive. Not only did the performance fail to meet our expectations, but the cost linked to it was also quite high. The free trial, which amounts to a hefty sum of $1000, was almost entirely consumed during these tests. Consequently, due to its prohibitive price and underwhelming performance, the TimeGPT model was eliminated from our final comparison.
+
+## Comparison
+
 ## Conclusion
 
 // TODO: Summarize the results, provide recommendations
