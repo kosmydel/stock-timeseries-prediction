@@ -78,6 +78,10 @@ We have presented a table below that encapsulates the outcomes of our data analy
 | Arima    | 0.0067      |               |         |
 | TFT      |             |               |         |
 
+
+#### Electricity: 
+![electricity](image.png)
+
 ## Conclusion
 
 // TODO: Summarize the results, provide recommendations
