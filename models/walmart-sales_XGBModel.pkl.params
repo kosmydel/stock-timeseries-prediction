@@ -1,1 +1,1 @@
-{"lags": 3, "lags_past_covariates": 1, "max_depth": 3, "n_estimators": 10, "output_chunk_length": 3}
+{"lags": 3, "lags_past_covariates": 2, "max_depth": 3, "n_estimators": 10, "output_chunk_length": 3}
