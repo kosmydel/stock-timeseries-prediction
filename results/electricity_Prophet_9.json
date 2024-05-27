@@ -1,0 +1,1 @@
+{"mape": 24.019902245063943, "mse": 0.09318680168702437, "rmse": 0.3052651334283435, "mae": 0.21551112334071817, "model": "Prophet", "forecast_horizon": 9, "dataset": "electricity", "experiment_time": 1716814406.310433, "parameters": {"add_seasonalities": null, "country_holidays": null, "suppress_stdout_stderror": true, "add_encoders": null, "cap": null, "floor": null}}
