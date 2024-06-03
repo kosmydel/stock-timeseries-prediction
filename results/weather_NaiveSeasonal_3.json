@@ -1,0 +1,1 @@
+{"mape": 3.918951696681091, "mse": 1.3920671236969235, "rmse": 1.1798589422879853, "mae": 0.8606661577116709, "model": "NaiveSeasonal", "forecast_horizon": 3, "dataset": "weather", "experiment_time": 1717294687.611872, "parameters": {"K": 1}}
