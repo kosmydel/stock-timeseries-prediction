@@ -1,0 +1,1 @@
+{"mape": 3.937748622089349, "mse": 1.360446048786576, "rmse": 1.1663816051304032, "mae": 0.8681722938141014, "model": "ARIMA", "forecast_horizon": 9, "dataset": "weather", "experiment_time": 1717296150.33138, "parameters": {"p": 3, "d": 1, "q": 0, "seasonal_order": [0, 0, 0, 0], "trend": null, "random_state": null, "add_encoders": null}}
