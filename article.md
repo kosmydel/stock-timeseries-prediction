@@ -83,7 +83,6 @@ A popular and widely used statistical method for time series forecasting is the 
 
 According to our tests, this model proved to be one of the best from all of the considered solutions.
 
-
 ### TimeGPT
 
 We decided to put the cutting-edge TimeGPT model to the test. A transformer-based model tailored for TimeSeries forecasting, TimeGPT is a variant of the widely appreciated GPT model, known for its efficacy in the Natural Language Processing (NLP) domain. We ran a series of tests using the Electricity Consumption Forecasting dataset as our playground.
@@ -96,14 +95,14 @@ We have presented a table below that encapsulates the outcomes of our data analy
 
 ### Mean Squared Error (MSE) Scores of one step ahead predictions
 
-|          | Electricity | Walmart Sales | Bitcoin | WW2 Weather |
-|----------|-------------|---------------|---------|-------------|
-| Baseline | 0.0075      | 30.5M         |         | 0.9062      |
-| XGBoost  | 0.0086      | **5.82M**     |         | 0.7882      |
-| LightGBM |             | 11.89M        |         |             |
-| Prophet  | 0.0800      |               |         |             |
-| Arima    | 0.0067      | 35.58M        |         | 0.7801      |
-| TFT      |             | 26.97M        |         |             |
+|          | Electricity | Walmart Sales | WW2 Weather |
+| -------- | ----------- | ------------- | ----------- |
+| Baseline | 0.0075      | 30.5M         | 0.9062      |
+| XGBoost  | 0.0086      | **5.82M**     | 0.7882      |
+| LightGBM |             | 11.89M        |             |
+| Prophet  | 0.0800      |               |             |
+| Arima    | 0.0067      | 35.58M        | 0.7801      |
+| TFT      |             | 26.97M        |             |
 
 #### Electricity:
 
@@ -118,18 +117,21 @@ We have presented a table below that encapsulates the outcomes of our data analy
 ![walmart](results/walmart-sales/mse.png)
 
 ## Time horizons
+
 When considering a model for predicting time series data, it's important to take it's long-term prediction performance into consideration.
 Therefore we have prepared a comparison of the models' performance with time horizons ranging from 1 to 10 steps ahead:
 
 ### Electricity dataset
-| Naive model                                               | ARIMA | XGBoost |
-|-----------------------------------------------------------|-------|---------|
-| ![](./results/horizon-plots/NaiveSeasonal-electricity.png) | ![](./results/horizon-plots/ARIMA-electricity.png)      |   ![](./results/horizon-plots/XGBModel-electricity.png)      |
+
+| Naive model                                                | ARIMA                                              | XGBoost                                               |
+| ---------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------- |
+| ![](./results/horizon-plots/NaiveSeasonal-electricity.png) | ![](./results/horizon-plots/ARIMA-electricity.png) | ![](./results/horizon-plots/XGBModel-electricity.png) |
 
 ### WW2 Weather dataset
-| Naive model                                               | ARIMA | XGBoost |
-|-----------------------------------------------------------|-------|---------|
-| ![](./results/horizon-plots/NaiveSeasonal-weather.png) | ![](./results/horizon-plots/ARIMA-weather.png)      |   ![](./results/horizon-plots/XGBModel-weather.png)      |
+
+| Naive model                                            | ARIMA                                          | XGBoost                                           |
+| ------------------------------------------------------ | ---------------------------------------------- | ------------------------------------------------- |
+| ![](./results/horizon-plots/NaiveSeasonal-weather.png) | ![](./results/horizon-plots/ARIMA-weather.png) | ![](./results/horizon-plots/XGBModel-weather.png) |
 
 ## Conclusion
 

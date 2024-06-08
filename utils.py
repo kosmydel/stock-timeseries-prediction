@@ -1,6 +1,6 @@
 from darts.metrics import mape, mse, rmse, mae
 import json
-from typing import List
+from typing import List, Sequence
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts import TimeSeries
 import matplotlib.pyplot as plt
@@ -11,6 +11,7 @@ from darts.dataprocessing.transformers.scaler import Scaler
 import os
 import glob
 import pandas as pd
+from darts.utils.model_selection import train_test_split
 
 RESULTS_PATH = "results/"
 
@@ -46,11 +47,12 @@ def plot_forecast(series, forecast, title):
 class Dataset:
     def __init__(
         self,
-        series: TimeSeries,
+        series: TimeSeries | List[TimeSeries],
         name: str,
-        past_covariates: TimeSeries | None = None,
-        future_covariates: TimeSeries | None = None,
+        past_covariates: TimeSeries | List[TimeSeries] | None = None,
+        future_covariates: TimeSeries | List[TimeSeries] | None = None,
         preprocess=True,
+        test_size=0.2,
     ):
         self.series_unscaled = series
         self.name = name
@@ -58,15 +60,13 @@ class Dataset:
         self.future_covariates_unscaled = future_covariates
 
         # split series into train and test sets
-        # this is necessaru, because split_after(0.8) removes the last point of the training set
-        diff = self.series_unscaled[-1].time_index[0] - self.series_unscaled[0].time_index[0]
-        interval_0_8 = diff * 0.8
-        split_point = self.series_unscaled[0].time_index[0] + interval_0_8
-        self.train_unscaled, self.test_unscaled = series.split_after(split_point)
+        self.train_unscaled, self.test_unscaled = train_test_split(series, test_size, axis=1)
+
+        print(f"Train size: {len(self.train_unscaled)} Test size: {len(self.test_unscaled)}")
 
         if past_covariates is not None:
             self.past_covariates_train_unscaled, self.past_covariates_test_unscaled = (
-                past_covariates.split_after(split_point)
+                train_test_split(past_covariates, test_size)
             )
 
         if preprocess:
@@ -74,14 +74,19 @@ class Dataset:
 
     def preprocess(self):
         self.scaler = StandardScaler()
-        self.transformer = Scaler(self.scaler)
+        self.transformer = Scaler(self.scaler, global_fit=True)
+
+        print(self.series_unscaled[0])
+        print(self.train_unscaled[0])
+        print(self.test_unscaled[0])
 
         self.series = self.transformer.fit_transform(self.series_unscaled)
         self.train = self.transformer.transform(self.train_unscaled)
         self.test = self.transformer.transform(self.test_unscaled)
 
+        # Past
         self.scaler_covariates = StandardScaler()
-        self.transformer_covariates = Scaler(self.scaler_covariates)
+        self.transformer_covariates = Scaler(self.scaler_covariates, global_fit=True)
 
         if self.past_covariates_unscaled is not None:
             self.past_covariates = self.transformer_covariates.fit_transform(
@@ -99,8 +104,9 @@ class Dataset:
             self.past_covariates_train = None
             self.past_covariates_test = None
 
+        # Future
         self.scaler_future_covariates = StandardScaler()
-        self.transformer_future_covariates = Scaler(self.scaler_future_covariates)
+        self.transformer_future_covariates = Scaler(self.scaler_future_covariates, global_fit=True)
 
         if self.future_covariates_unscaled is not None:
             self.future_covariates = self.transformer_future_covariates.fit_transform(
@@ -114,8 +120,12 @@ class Dataset:
 
     def plot_train_test(self):
         plt.figure(figsize=(25, 5))
-        self.train.plot(label="train")
-        self.test.plot(label="test")
+        if isinstance(self.train, TimeSeries):
+            self.train.plot(label="train")
+            self.test.plot(label="test")
+        else:
+            # TODO: plot multiple series
+            pass
         plt.title(self.name)
         plt.legend()
         plt.show()
@@ -148,7 +158,7 @@ class TimeseriesExperiment:
         if self.model.supports_future_covariates:
             params["future_covariates"] = self.dataset.future_covariates
 
-        assert type(self.dataset.train) == TimeSeries
+        # assert type(self.dataset.train) in [TimeSeries, List[TimeSeries]]
 
         if len(self.parameters) == 0:
             self.trained_model = self.model.fit(self.dataset.train, **params)
@@ -189,10 +199,14 @@ class TimeseriesExperiment:
         if self.trained_model.supports_future_covariates:
             params["future_covariates"] = self.dataset.future_covariates
 
+        start_time = self.dataset.test.start_time() if isinstance(self.dataset.test, TimeSeries) else self.dataset.test[0].start_time()
+
+        print(start_time)
+
         # Measure model performance using historical forecasts
         result = self.trained_model.historical_forecasts(
             self.dataset.series,
-            start=self.dataset.test.start_time(),
+            start=start_time,
             forecast_horizon=self.forecast_horizon,
             retrain=self.retrain,
             **params,

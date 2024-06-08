@@ -1,0 +1,1 @@
+{"mape": 11.850155580008144, "mse": 12470350.394666571, "rmse": 3531.338329113563, "mae": 2180.9274256388712, "model": "Prophet", "forecast_horizon": 1, "dataset": "walmart-sales", "experiment_time": 1717835559.481112, "parameters": {"add_seasonalities": null, "country_holidays": null, "suppress_stdout_stderror": true, "add_encoders": null, "cap": null, "floor": null}}
