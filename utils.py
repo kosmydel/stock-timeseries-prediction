@@ -157,7 +157,10 @@ class TimeseriesExperiment:
 
     def objective(self, trial):
         lags = trial.suggest_int('lags', 1, 15)
-        lags_past_covariates = trial.suggest_int('lags_past_covariates', 1, 10)
+        if (self.parameters.get('lags_past_covariates') is not None):
+            lags_past_covariates = trial.suggest_int('lags_past_covariates', 1, 10)
+        else:
+            lags_past_covariates = None
         max_depth = trial.suggest_int('max_depth', 1, 10)
         n_estimators = trial.suggest_int('n_estimators', 1, 200)
         output_chunk_length = trial.suggest_int('output_chunk_length', 1, 2)
