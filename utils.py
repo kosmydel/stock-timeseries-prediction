@@ -1,6 +1,6 @@
 from darts.metrics import mape, mse, rmse, mae
 import json
-from typing import List
+from typing import Dict, List, Tuple
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts import TimeSeries
 import matplotlib.pyplot as plt
@@ -11,6 +11,11 @@ from darts.dataprocessing.transformers.scaler import Scaler
 import os
 import glob
 import pandas as pd
+import optuna
+
+from darts.dataprocessing.transformers import Scaler
+from darts.metrics import mse
+from darts.models import XGBModel
 
 RESULTS_PATH = "results/"
 
@@ -44,6 +49,8 @@ def plot_forecast(series, forecast, title):
 
 
 class Dataset:
+    last_id = 0
+
     def __init__(
         self,
         series: TimeSeries,
@@ -51,11 +58,16 @@ class Dataset:
         past_covariates: TimeSeries | None = None,
         future_covariates: TimeSeries | None = None,
         preprocess=True,
+        id: int | None = None,
     ):
         self.series_unscaled = series
         self.name = name
         self.past_covariates_unscaled = past_covariates
         self.future_covariates_unscaled = future_covariates
+
+        if id is None:
+            self.id = Dataset.last_id
+            Dataset.last_id += 1
 
         # split series into train and test sets
         # this is necessaru, because split_after(0.8) removes the last point of the training set
@@ -131,6 +143,9 @@ class TimeseriesExperiment:
         use_pretrained_model: bool = False,
         retrain: bool = False,
         n_last_series_from_train_in_test: int = 0,
+        metric=mse,
+        optuna_parameters: Dict[str, Tuple[int, int] | List[str]] | None =None, # Optuna objective function
+        validation_datasets: List[Dataset] = [], # List of datasets to validate on
     ):
         self.model = model
         self.dataset = dataset
@@ -140,15 +155,38 @@ class TimeseriesExperiment:
         self.use_pretrained_model = use_pretrained_model
         self.retrain = retrain
         self.n_last_series_from_train_in_test = n_last_series_from_train_in_test
+        self.metric = metric
+        self.optuna_parameters = optuna_parameters
+        if validation_datasets is None:
+            self.validation_datasets = [self.dataset]
+        else:
+            self.validation_datasets = validation_datasets
+
+    def objective(self, trial):
+        if self.optuna_parameters is None:
+            raise ValueError("No objective parameters specified")
+
+        params_to_pass = {}
+        for param, value in self.optuna_parameters.items():
+            if type(value) == list:
+                params_to_pass[param] = trial.suggest_categorical(param, value)
+            else:
+                params_to_pass[param] = trial.suggest_int(param, value[0], value[1])
+
+        self.model = XGBModel(**params_to_pass)
+
+        params = self.get_params()
+        self.model.fit(self.dataset.train, **params)
+
+        test_params = self.get_test_params()
+        predictions = self.model.historical_forecasts(self.dataset.test, forecast_horizon=self.forecast_horizon, **test_params)
+        metric = self.metric(self.dataset.test, predictions)
+
+        return metric
 
     def find_parameters(self):
-        params = {}
-        if self.model.supports_past_covariates:
-            params["past_covariates"] = self.dataset.past_covariates_train
-        if self.model.supports_future_covariates:
-            params["future_covariates"] = self.dataset.future_covariates
-
         assert type(self.dataset.train) == TimeSeries
+        params = self.get_params()
 
         if len(self.parameters) == 0:
             self.trained_model = self.model.fit(self.dataset.train, **params)
@@ -160,12 +198,52 @@ class TimeseriesExperiment:
                 self.parameters,
                 self.dataset.train,
                 forecast_horizon=self.forecast_horizon,
+                metric=self.metric,
                 **params,
             )
             self.trained_model = model
             self.trained_model.fit(self.dataset.train, **params)
-            print("Best parameters:", parameters, "Metric:", metric)
+            print("[GS] Best parameters:", parameters, "Metric:", metric)
             return parameters
+
+    def find_parameters_optuna(self):
+        assert type(self.dataset.train) == TimeSeries
+
+        params = self.get_params()
+
+        if self.optuna_parameters is None:
+            self.trained_model = self.model.fit(self.dataset.train, **params)
+            print("No parameters to search")
+            return None
+        else:
+            print("Searching for best parameters", self.optuna_parameters)
+
+            study = optuna.create_study(direction="minimize")
+            study.optimize(self.objective, n_trials=100)
+
+            self.trained_model = self.model
+            self.trained_model.fit(self.dataset.train, **params)
+            print("[Optuna] Best parameters:", study.best_params, "Metric:", study.best_value)
+            return study.best_params
+
+    def get_params(self):
+        params = {}
+        if self.model.supports_past_covariates:
+            params["past_covariates"] = self.dataset.past_covariates_train
+        if self.model.supports_future_covariates:
+            params["future_covariates"] = self.dataset.future_covariates
+
+        return params
+
+    def get_test_params(self):
+        params = {}
+        if self.model.supports_past_covariates:
+            params["past_covariates"] = self.dataset.past_covariates_test
+        if self.model.supports_future_covariates:
+            params["future_covariates"] = self.dataset.future_covariates
+
+        return params
+
 
     def load_or_train(self):
         model_name = f"{self.dataset.name}_{self.model.__class__.__name__}.pkl"
@@ -174,20 +252,50 @@ class TimeseriesExperiment:
         if os.path.exists(model_location) and self.use_pretrained_model:
             self.trained_model = load_model(model_location)
         else:
-            parameters = self.find_parameters()
+            if self.optuna_parameters is None:
+                print('Using GridSearchCV, as no Optuna parameters are specified')
+                parameters = self.find_parameters()
+            else:
+                print('Using Optuna')
+                parameters = self.find_parameters_optuna()
             save_model(model_location, self.trained_model, parameters=parameters)
+
+    def measure_validation_datasets_metrics(self):
+        validation_metrics = {}
+        for dataset in self.validation_datasets:
+            result = self.trained_model.historical_forecasts(
+                dataset.series,
+                start=dataset.test.start_time(),
+                forecast_horizon=self.forecast_horizon,
+                retrain=self.retrain,
+                **self.get_params(),
+            )
+
+            result_unscaled = dataset.postprocess(result)
+
+            validation_metrics[f'{dataset.name}-{dataset.id}'] = calculate_metrics(dataset.test_unscaled, result_unscaled)
+
+        return validation_metrics
+
+    def calculate_average_metrics(self, validation_metrics: Dict[str, Dict[str, float]]):
+        average_metrics = {}
+        for _, metrics in validation_metrics.items():
+            for metric, value in metrics.items():
+                if metric not in average_metrics:
+                    average_metrics[metric] = 0
+                average_metrics[metric] += value
+
+        for metric, value in average_metrics.items():
+            average_metrics[metric] /= len(validation_metrics)
+
+        return average_metrics
 
     def run(self):
         # Load or train model
         self.load_or_train()
-
-        params = {}
         assert self.trained_model is not None
 
-        if self.trained_model.supports_past_covariates:
-            params["past_covariates"] = self.dataset.past_covariates
-        if self.trained_model.supports_future_covariates:
-            params["future_covariates"] = self.dataset.future_covariates
+        params = self.get_params()
 
         # Measure model performance using historical forecasts
         result = self.trained_model.historical_forecasts(
@@ -206,7 +314,7 @@ class TimeseriesExperiment:
         )
 
         # Calculate metrics
-        metrics = calculate_metrics(self.dataset.test_unscaled, result_unscaled)
+        metrics = self.calculate_average_metrics(self.measure_validation_datasets_metrics())
         metrics["model"] = self.model.__class__.__name__
         metrics["forecast_horizon"] = self.forecast_horizon
         metrics["dataset"] = self.dataset.name

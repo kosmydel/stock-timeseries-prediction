@@ -108,10 +108,10 @@ We have presented a table below that encapsulates the outcomes of our data analy
 |----------|-------------|---------------|---------|-------------|
 | Baseline | 0.0075      | 30.5M         |         | 0.9062      |
 | XGBoost  | 0.0086      | **5.82M**     |         | 0.7882      |
-| LightGBM |             | 11.89M        |         |             |
+| LightGBM | 0.0077      | 11.89M        |         |             |
 | Prophet  | 0.0800      |               |         |             |
 | Arima    | 0.0067      | 35.58M        |         | 0.7801      |
-| TFT      |             | 26.97M        |         |             |
+| TFT      | X           | 26.97M        |         |             |
 
 #### Electricity:
 
