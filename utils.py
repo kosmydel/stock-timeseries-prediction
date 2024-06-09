@@ -1,6 +1,6 @@
 from darts.metrics import mape, mse, rmse, mae
 import json
-from typing import List
+from typing import Dict, List, Tuple
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts import TimeSeries
 import matplotlib.pyplot as plt
@@ -143,7 +143,8 @@ class TimeseriesExperiment:
         use_pretrained_model: bool = False,
         retrain: bool = False,
         n_last_series_from_train_in_test: int = 0,
-        metric=mse
+        metric=mse,
+        optuna_parameters: Dict[str, Tuple[int, int] | List[str]] | None =None, # Optuna objective function
     ):
         self.model = model
         self.dataset = dataset
@@ -154,31 +155,26 @@ class TimeseriesExperiment:
         self.retrain = retrain
         self.n_last_series_from_train_in_test = n_last_series_from_train_in_test
         self.metric = metric
+        self.optuna_parameters = optuna_parameters
 
     def objective(self, trial):
-        lags = trial.suggest_int('lags', 1, 15)
-        if (self.parameters.get('lags_past_covariates') is not None):
-            lags_past_covariates = trial.suggest_int('lags_past_covariates', 1, 10)
-        else:
-            lags_past_covariates = None
-        max_depth = trial.suggest_int('max_depth', 1, 10)
-        n_estimators = trial.suggest_int('n_estimators', 1, 200)
-        output_chunk_length = trial.suggest_int('output_chunk_length', 1, 2)
+        if self.optuna_parameters is None:
+            raise ValueError("No objective parameters specified")
 
-        self.model = XGBModel(
-            lags=lags,
-            lags_past_covariates=lags_past_covariates,
-            max_depth=max_depth,
-            n_estimators=n_estimators,
-            output_chunk_length=output_chunk_length,
-        )
+        params_to_pass = {}
+        for param, value in self.optuna_parameters.items():
+            if type(value) == list:
+                params_to_pass[param] = trial.suggest_categorical(param, value)
+            else:
+                params_to_pass[param] = trial.suggest_int(param, value[0], value[1])
+
+        self.model = XGBModel(**params_to_pass)
+
         params = self.get_params()
-
-        print(params)
-
         self.model.fit(self.dataset.train, **params)
 
-        predictions = self.model.historical_forecasts(self.dataset.test, forecast_horizon=self.forecast_horizon)
+        test_params = self.get_test_params()
+        predictions = self.model.historical_forecasts(self.dataset.test, forecast_horizon=self.forecast_horizon, **test_params)
         metric = self.metric(self.dataset.test, predictions)
 
         return metric
@@ -210,17 +206,18 @@ class TimeseriesExperiment:
 
         params = self.get_params()
 
-        if len(self.parameters) == 0:
+        if self.optuna_parameters is None:
             self.trained_model = self.model.fit(self.dataset.train, **params)
             print("No parameters to search")
             return None
         else:
-            print("Searching for best parameters", self.parameters)
+            print("Searching for best parameters", self.optuna_parameters)
 
             study = optuna.create_study(direction="minimize")
             study.optimize(self.objective, n_trials=100)
 
-            self.trained_model = self.model  # after Optuna optimization, model is at its best state.
+            self.trained_model = self.model
+            self.trained_model.fit(self.dataset.train, **params)
             print("[Optuna] Best parameters:", study.best_params, "Metric:", study.best_value)
             return study.best_params
 
@@ -228,6 +225,15 @@ class TimeseriesExperiment:
         params = {}
         if self.model.supports_past_covariates:
             params["past_covariates"] = self.dataset.past_covariates_train
+        if self.model.supports_future_covariates:
+            params["future_covariates"] = self.dataset.future_covariates
+
+        return params
+
+    def get_test_params(self):
+        params = {}
+        if self.model.supports_past_covariates:
+            params["past_covariates"] = self.dataset.past_covariates_test
         if self.model.supports_future_covariates:
             params["future_covariates"] = self.dataset.future_covariates
 
@@ -241,7 +247,12 @@ class TimeseriesExperiment:
         if os.path.exists(model_location) and self.use_pretrained_model:
             self.trained_model = load_model(model_location)
         else:
-            parameters = self.find_parameters_optuna()
+            if self.optuna_parameters is None:
+                print('Using GridSearchCV, as no Optuna parameters are specified')
+                parameters = self.find_parameters()
+            else:
+                print('Using Optuna')
+                parameters = self.find_parameters_optuna()
             save_model(model_location, self.trained_model, parameters=parameters)
 
     def run(self):
