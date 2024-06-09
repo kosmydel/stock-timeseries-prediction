@@ -12,6 +12,8 @@ import os
 import glob
 import pandas as pd
 import optuna
+from copy import deepcopy
+from tqdm import tqdm
 
 from darts.dataprocessing.transformers import Scaler
 from darts.metrics import mse
@@ -162,6 +164,8 @@ class TimeseriesExperiment:
         else:
             self.validation_datasets = validation_datasets
 
+        self.best_parameters = None
+
     def objective(self, trial):
         if self.optuna_parameters is None:
             raise ValueError("No objective parameters specified")
@@ -203,6 +207,7 @@ class TimeseriesExperiment:
             )
             self.trained_model = model
             self.trained_model.fit(self.dataset.train, **params)
+            self.best_parameters = parameters
             print("[GS] Best parameters:", parameters, "Metric:", metric)
             return parameters
 
@@ -223,6 +228,7 @@ class TimeseriesExperiment:
 
             self.trained_model = self.model
             self.trained_model.fit(self.dataset.train, **params)
+            self.best_parameters = study.best_params
             print("[Optuna] Best parameters:", study.best_params, "Metric:", study.best_value)
             return study.best_params
 
@@ -262,8 +268,11 @@ class TimeseriesExperiment:
 
     def measure_validation_datasets_metrics(self):
         validation_metrics = {}
-        for dataset in self.validation_datasets:
-            result = self.trained_model.historical_forecasts(
+        for dataset in tqdm(self.validation_datasets):
+            local_model = deepcopy(self.trained_model)
+
+            local_model.fit(dataset.train, **self.get_params())
+            result = local_model.historical_forecasts(
                 dataset.series,
                 start=dataset.test.start_time(),
                 forecast_horizon=self.forecast_horizon,
