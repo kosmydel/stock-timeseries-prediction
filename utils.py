@@ -11,6 +11,18 @@ from darts.dataprocessing.transformers.scaler import Scaler
 import os
 import glob
 import pandas as pd
+import numpy as np
+import optuna
+import torch
+from optuna.integration import PyTorchLightningPruningCallback
+from pytorch_lightning.callbacks import EarlyStopping
+from sklearn.preprocessing import MaxAbsScaler
+
+from darts.dataprocessing.transformers import Scaler
+from darts.datasets import AirPassengersDataset
+from darts.metrics import mse
+from darts.models import TCNModel, XGBModel
+from darts.utils.likelihood_models import GaussianLikelihood
 
 RESULTS_PATH = "results/"
 
@@ -131,6 +143,7 @@ class TimeseriesExperiment:
         use_pretrained_model: bool = False,
         retrain: bool = False,
         n_last_series_from_train_in_test: int = 0,
+        metric=mse
     ):
         self.model = model
         self.dataset = dataset
@@ -140,15 +153,39 @@ class TimeseriesExperiment:
         self.use_pretrained_model = use_pretrained_model
         self.retrain = retrain
         self.n_last_series_from_train_in_test = n_last_series_from_train_in_test
+        self.metric = metric
+
+    def objective(self, trial):
+        lags = trial.suggest_int('lags', 1, 15)
+        if (self.parameters.get('lags_past_covariates') is not None):
+            lags_past_covariates = trial.suggest_int('lags_past_covariates', 1, 10)
+        else:
+            lags_past_covariates = None
+        max_depth = trial.suggest_int('max_depth', 1, 10)
+        n_estimators = trial.suggest_int('n_estimators', 1, 200)
+        output_chunk_length = trial.suggest_int('output_chunk_length', 1, 2)
+
+        self.model = XGBModel(
+            lags=lags,
+            lags_past_covariates=lags_past_covariates,
+            max_depth=max_depth,
+            n_estimators=n_estimators,
+            output_chunk_length=output_chunk_length,
+        )
+        params = self.get_params()
+
+        print(params)
+
+        self.model.fit(self.dataset.train, **params)
+
+        predictions = self.model.historical_forecasts(self.dataset.test, forecast_horizon=self.forecast_horizon)
+        metric = self.metric(self.dataset.test, predictions)
+
+        return metric
 
     def find_parameters(self):
-        params = {}
-        if self.model.supports_past_covariates:
-            params["past_covariates"] = self.dataset.past_covariates_train
-        if self.model.supports_future_covariates:
-            params["future_covariates"] = self.dataset.future_covariates
-
         assert type(self.dataset.train) == TimeSeries
+        params = self.get_params()
 
         if len(self.parameters) == 0:
             self.trained_model = self.model.fit(self.dataset.train, **params)
@@ -160,12 +197,42 @@ class TimeseriesExperiment:
                 self.parameters,
                 self.dataset.train,
                 forecast_horizon=self.forecast_horizon,
+                metric=self.metric,
                 **params,
             )
             self.trained_model = model
             self.trained_model.fit(self.dataset.train, **params)
-            print("Best parameters:", parameters, "Metric:", metric)
+            print("[GS] Best parameters:", parameters, "Metric:", metric)
             return parameters
+
+    def find_parameters_optuna(self):
+        assert type(self.dataset.train) == TimeSeries
+
+        params = self.get_params()
+
+        if len(self.parameters) == 0:
+            self.trained_model = self.model.fit(self.dataset.train, **params)
+            print("No parameters to search")
+            return None
+        else:
+            print("Searching for best parameters", self.parameters)
+
+            study = optuna.create_study(direction="minimize")
+            study.optimize(self.objective, n_trials=100)
+
+            self.trained_model = self.model  # after Optuna optimization, model is at its best state.
+            print("[Optuna] Best parameters:", study.best_params, "Metric:", study.best_value)
+            return study.best_params
+
+    def get_params(self):
+        params = {}
+        if self.model.supports_past_covariates:
+            params["past_covariates"] = self.dataset.past_covariates_train
+        if self.model.supports_future_covariates:
+            params["future_covariates"] = self.dataset.future_covariates
+
+        return params
+
 
     def load_or_train(self):
         model_name = f"{self.dataset.name}_{self.model.__class__.__name__}.pkl"
@@ -174,20 +241,15 @@ class TimeseriesExperiment:
         if os.path.exists(model_location) and self.use_pretrained_model:
             self.trained_model = load_model(model_location)
         else:
-            parameters = self.find_parameters()
+            parameters = self.find_parameters_optuna()
             save_model(model_location, self.trained_model, parameters=parameters)
 
     def run(self):
         # Load or train model
         self.load_or_train()
-
-        params = {}
         assert self.trained_model is not None
 
-        if self.trained_model.supports_past_covariates:
-            params["past_covariates"] = self.dataset.past_covariates
-        if self.trained_model.supports_future_covariates:
-            params["future_covariates"] = self.dataset.future_covariates
+        params = self.get_params()
 
         # Measure model performance using historical forecasts
         result = self.trained_model.historical_forecasts(
