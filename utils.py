@@ -11,18 +11,11 @@ from darts.dataprocessing.transformers.scaler import Scaler
 import os
 import glob
 import pandas as pd
-import numpy as np
 import optuna
-import torch
-from optuna.integration import PyTorchLightningPruningCallback
-from pytorch_lightning.callbacks import EarlyStopping
-from sklearn.preprocessing import MaxAbsScaler
 
 from darts.dataprocessing.transformers import Scaler
-from darts.datasets import AirPassengersDataset
 from darts.metrics import mse
-from darts.models import TCNModel, XGBModel
-from darts.utils.likelihood_models import GaussianLikelihood
+from darts.models import XGBModel
 
 RESULTS_PATH = "results/"
 
@@ -56,6 +49,8 @@ def plot_forecast(series, forecast, title):
 
 
 class Dataset:
+    last_id = 0
+
     def __init__(
         self,
         series: TimeSeries,
@@ -63,11 +58,16 @@ class Dataset:
         past_covariates: TimeSeries | None = None,
         future_covariates: TimeSeries | None = None,
         preprocess=True,
+        id: int | None = None,
     ):
         self.series_unscaled = series
         self.name = name
         self.past_covariates_unscaled = past_covariates
         self.future_covariates_unscaled = future_covariates
+
+        if id is None:
+            self.id = Dataset.last_id
+            Dataset.last_id += 1
 
         # split series into train and test sets
         # this is necessaru, because split_after(0.8) removes the last point of the training set
@@ -145,6 +145,7 @@ class TimeseriesExperiment:
         n_last_series_from_train_in_test: int = 0,
         metric=mse,
         optuna_parameters: Dict[str, Tuple[int, int] | List[str]] | None =None, # Optuna objective function
+        validation_datasets: List[Dataset] = [], # List of datasets to validate on
     ):
         self.model = model
         self.dataset = dataset
@@ -156,6 +157,10 @@ class TimeseriesExperiment:
         self.n_last_series_from_train_in_test = n_last_series_from_train_in_test
         self.metric = metric
         self.optuna_parameters = optuna_parameters
+        if validation_datasets is None:
+            self.validation_datasets = [self.dataset]
+        else:
+            self.validation_datasets = validation_datasets
 
     def objective(self, trial):
         if self.optuna_parameters is None:
@@ -255,6 +260,36 @@ class TimeseriesExperiment:
                 parameters = self.find_parameters_optuna()
             save_model(model_location, self.trained_model, parameters=parameters)
 
+    def measure_validation_datasets_metrics(self):
+        validation_metrics = {}
+        for dataset in self.validation_datasets:
+            result = self.trained_model.historical_forecasts(
+                dataset.series,
+                start=dataset.test.start_time(),
+                forecast_horizon=self.forecast_horizon,
+                retrain=self.retrain,
+                **self.get_params(),
+            )
+
+            result_unscaled = dataset.postprocess(result)
+
+            validation_metrics[f'{dataset.name}-{dataset.id}'] = calculate_metrics(dataset.test_unscaled, result_unscaled)
+
+        return validation_metrics
+
+    def calculate_average_metrics(self, validation_metrics: Dict[str, Dict[str, float]]):
+        average_metrics = {}
+        for _, metrics in validation_metrics.items():
+            for metric, value in metrics.items():
+                if metric not in average_metrics:
+                    average_metrics[metric] = 0
+                average_metrics[metric] += value
+
+        for metric, value in average_metrics.items():
+            average_metrics[metric] /= len(validation_metrics)
+
+        return average_metrics
+
     def run(self):
         # Load or train model
         self.load_or_train()
@@ -279,7 +314,7 @@ class TimeseriesExperiment:
         )
 
         # Calculate metrics
-        metrics = calculate_metrics(self.dataset.test_unscaled, result_unscaled)
+        metrics = self.calculate_average_metrics(self.measure_validation_datasets_metrics())
         metrics["model"] = self.model.__class__.__name__
         metrics["forecast_horizon"] = self.forecast_horizon
         metrics["dataset"] = self.dataset.name
