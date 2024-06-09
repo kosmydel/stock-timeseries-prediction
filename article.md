@@ -47,7 +47,12 @@ The data was resampled to hourly data to reduce the size of the dataset.
 
 ### Bitcoin Price Forecasting
 
-// TODO: List the datasets, explain why each dataset is different
+Attribute Information:
+- **Date**: Date in the format: `mm/dd/yyyy`
+- **Close/Last**: The price of Bitcoin at the end of the trading period for the given date. "Close" refers to the closing price, which is the last price at which Bitcoin was traded during the day
+- **Open**: The price of Bitcoin at the beginning of the trading period for the given date.
+- **High**: The highest price at which Bitcoin was traded during the trading period for the given date
+- **Low**: The lowest price at which Bitcoin was traded during the trading period for the given date
 
 ### World War Two Weather Conditions
 
@@ -65,8 +70,6 @@ Attribute Information (narrowed down to the most essential attributes):
 
 ## Models
 
-// TODO: List models, table the results
-
 ### Baseline - Naive Seasonal Model
 
 For our baseline model, we have chosen to utilize the [NaiveSeasonal model](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal). This model always predicts the value from $K$ time steps ago. We set $K=1$, so in this case, the model predicts the last value of the training set.
@@ -82,6 +85,11 @@ The model performed exceptionally wel in our testing, proving to be the best or 
 A popular and widely used statistical method for time series forecasting is the ARIMA model, which stands for AutoRegressive Integrated Moving Average. In our experiments we used [this implementation](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.arima.html).
 
 According to our tests, this model proved to be one of the best from all of the considered solutions.
+
+### Prophet
+A forecasting tool developed by Facebook (the implementation we used can be found [here](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html)), designed for time series data. It is said to be particularly useful for handling time series with strong seasonal effects and supporting the inclusion of holiday effects.
+Prophet is designed to be user-friendly and requires minimal data preprocessing, working well with missing data and large outliers. The model can capture daily, weekly, and yearly seasonality patterns, making it suitable for various applications like sales forecasting, web traffic analysis, and more.
+The model allows customization and fine-tuning, enabling users to adjust parameters to better fit their specific datasets and requirements. Additionally, it is efficient and can process large datasets quickly, making it suitable for real-time forecasting needs.
 
 
 ### TimeGPT
@@ -107,11 +115,11 @@ We have presented a table below that encapsulates the outcomes of our data analy
 
 #### Electricity:
 
-![electricity](image.png)
+![electricity](images/electricity_results.png)
 
 #### WW2 Weather:
 
-![ww2_weather](ww2_weather.png)
+![ww2_weather](images/weather_results.png)
 
 #### Walmart Sales Forecasting
 
@@ -133,4 +141,4 @@ Therefore we have prepared a comparison of the models' performance with time hor
 
 ## Conclusion
 
-// TODO: Summarize the results, provide recommendations
+
