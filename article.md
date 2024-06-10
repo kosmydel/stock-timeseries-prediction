@@ -128,6 +128,8 @@ We have presented a table below that encapsulates the outcomes of our data analy
 
 ![walmart](results/walmart-sales/mse.png)
 
+![walmart](results/walmart-sales/mape.png)
+
 ## Time horizons
 
 When considering a model for predicting time series data, it's important to take it's long-term prediction performance into consideration.
