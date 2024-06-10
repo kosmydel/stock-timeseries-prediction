@@ -107,14 +107,15 @@ We have presented a table below that encapsulates the outcomes of our data analy
 
 ### Mean Squared Error (MSE) Scores of one step ahead predictions
 
-|          | Electricity | Walmart Sales | Bitcoin | WW2 Weather |
-| -------- | ----------- | ------------- | ------- | ----------- |
-| Baseline | 0.0075      | 30.5M         |         | 0.9062      |
-| XGBoost  | 0.0086      | **5.82M**     |         | 0.7882      |
-| LightGBM | 0.0077      | 11.89M        |         |             |
-| Prophet  | 0.0800      |               |         |             |
-| Arima    | 0.0067      | 35.58M        |         | 0.7801      |
-| TFT      | X           | 26.97M        |         |             |
+|          | Electricity | Walmart Sales | WW2 Weather |
+| -------- | ----------- | ------------- | ----------- |
+| Baseline | 0.0075      | 8.28M         | 0.9062      |
+| XGBoost  | 0.0086      | 12.13M        | 0.7882      |
+| LightGBM | 0.0077      | 9.81M         | X           |
+| Prophet  | 0.0800      | 5.01M         | X           |
+| Arima    | 0.0067      | 7.27M         | 0.7801      |
+| TFT      | X           | 10.91M        | X           |
+| RNNModel | X           | 10.46M        | X           |
 
 #### Electricity:
 
