@@ -48,6 +48,7 @@ The data was resampled to hourly data to reduce the size of the dataset.
 ### Bitcoin Price Forecasting
 
 Attribute Information:
+
 - **Date**: Date in the format: `mm/dd/yyyy`
 - **Close/Last**: The price of Bitcoin at the end of the trading period for the given date. "Close" refers to the closing price, which is the last price at which Bitcoin was traded during the day
 - **Open**: The price of Bitcoin at the beginning of the trading period for the given date.
@@ -87,10 +88,10 @@ A popular and widely used statistical method for time series forecasting is the 
 According to our tests, this model proved to be one of the best from all of the considered solutions.
 
 ### Prophet
+
 A forecasting tool developed by Facebook (the implementation we used can be found [here](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html)), designed for time series data. It is said to be particularly useful for handling time series with strong seasonal effects and supporting the inclusion of holiday effects.
 Prophet is designed to be user-friendly and requires minimal data preprocessing, working well with missing data and large outliers. The model can capture daily, weekly, and yearly seasonality patterns, making it suitable for various applications like sales forecasting, web traffic analysis, and more.
 The model allows customization and fine-tuning, enabling users to adjust parameters to better fit their specific datasets and requirements. Additionally, it is efficient and can process large datasets quickly, making it suitable for real-time forecasting needs.
-
 
 ### TimeGPT
 
@@ -104,14 +105,15 @@ We have presented a table below that encapsulates the outcomes of our data analy
 
 ### Mean Squared Error (MSE) Scores of one step ahead predictions
 
-|          | Electricity | Walmart Sales | Bitcoin | WW2 Weather |
-|----------|-------------|---------------|---------|-------------|
-| Baseline | 0.0075      | 30.5M         |         | 0.9062      |
-| XGBoost  | 0.0086      | **5.82M**     |         | 0.7882      |
-| LightGBM | 0.0077      | 11.89M        |         |             |
-| Prophet  | 0.0800      |               |         |             |
-| Arima    | 0.0067      | 35.58M        |         | 0.7801      |
-| TFT      | X           | 26.97M        |         |             |
+|          | Electricity | Walmart Sales | WW2 Weather |
+| -------- | ----------- | ------------- | ----------- |
+| Baseline | 0.0075      | 8.28M         | 0.9062      |
+| XGBoost  | 0.0086      | 12.13M        | 0.7882      |
+| LightGBM | 0.0077      | 9.81M         |             |
+| Prophet  | 0.0800      | 5.01M         |             |
+| Arima    | 0.0067      | 7.27M         | 0.7801      |
+| TFT      | X           | 10.91M        |             |
+| RNNModel | X           | 10.46M        |             |
 
 #### Electricity:
 
@@ -126,19 +128,20 @@ We have presented a table below that encapsulates the outcomes of our data analy
 ![walmart](results/walmart-sales/mse.png)
 
 ## Time horizons
+
 When considering a model for predicting time series data, it's important to take it's long-term prediction performance into consideration.
 Therefore we have prepared a comparison of the models' performance with time horizons ranging from 1 to 10 steps ahead:
 
 ### Electricity dataset
-| Naive model                                               | ARIMA | XGBoost |
-|-----------------------------------------------------------|-------|---------|
-| ![](./results/horizon-plots/NaiveSeasonal-electricity.png) | ![](./results/horizon-plots/ARIMA-electricity.png)      |   ![](./results/horizon-plots/XGBModel-electricity.png)      |
+
+| Naive model                                                | ARIMA                                              | XGBoost                                               |
+| ---------------------------------------------------------- | -------------------------------------------------- | ----------------------------------------------------- |
+| ![](./results/horizon-plots/NaiveSeasonal-electricity.png) | ![](./results/horizon-plots/ARIMA-electricity.png) | ![](./results/horizon-plots/XGBModel-electricity.png) |
 
 ### WW2 Weather dataset
-| Naive model                                               | ARIMA | XGBoost |
-|-----------------------------------------------------------|-------|---------|
-| ![](./results/horizon-plots/NaiveSeasonal-weather.png) | ![](./results/horizon-plots/ARIMA-weather.png)      |   ![](./results/horizon-plots/XGBModel-weather.png)      |
+
+| Naive model                                            | ARIMA                                          | XGBoost                                           |
+| ------------------------------------------------------ | ---------------------------------------------- | ------------------------------------------------- |
+| ![](./results/horizon-plots/NaiveSeasonal-weather.png) | ![](./results/horizon-plots/ARIMA-weather.png) | ![](./results/horizon-plots/XGBModel-weather.png) |
 
 ## Conclusion
-
-
